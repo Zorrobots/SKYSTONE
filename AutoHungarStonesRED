@@ -1,0 +1,177 @@
+package org.firstinspires.ftc.teamcode;
+
+import com.qualcomm.robotcore.eventloop.opmode.Autonomous;
+import com.qualcomm.robotcore.hardware.DcMotorController;
+import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
+import com.qualcomm.robotcore.hardware.DcMotor;
+import com.qualcomm.robotcore.util.ElapsedTime;
+import com.qualcomm.robotcore.hardware.Servo;
+import com.qualcomm.hardware.modernrobotics.ModernRoboticsI2cRangeSensor;
+import com.qualcomm.robotcore.hardware.DistanceSensor;
+
+@Autonomous(name = "AutoHungarStonesR", group = "PruebaAuto")
+public class AutoHungarStonesR extends LinearOpMode {
+  static final int ticks = 1120;
+  static double minTarget;
+  private DcMotor BR = null;
+  private DcMotor BL = null;
+  private DcMotor FCR;
+  private DcMotor FCL;
+  private DcMotor FR = null;
+  private DcMotor FL = null;
+  private DistanceSensor rango;
+  
+  @Override
+  
+  public void runOpMode() {
+
+    BR = hardwareMap.dcMotor.get("BR");
+    BL = hardwareMap.dcMotor.get("BL");
+    FCR = hardwareMap.dcMotor.get("FCR");
+    FCL = hardwareMap.dcMotor.get("FCL");
+    FR = hardwareMap.dcMotor.get("FR");
+    FL = hardwareMap.dcMotor.get("FL");
+    rango = hardwareMap.get(ModernRoboticsI2cRangeSensor.class, "rango");
+    
+      BR.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
+      BL.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
+      FR.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
+      FL.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
+    FCR.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
+    FCL.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
+    waitForStart();
+    
+    if (opModeIsActive()) {
+      
+      while(((ModernRoboticsI2cRangeSensor) rango).cmUltrasonic() > 26) 
+      {
+        BR.setPower(0.8);
+        BL.setPower(-0.8);
+        FR.setPower(0.8);
+        FL.setPower(-0.8);        
+      }
+      
+      stopMotors();
+      
+      turn(-1, -2.1, 30);
+      move(1, 1.65,30);
+      turn(1, 2.1, 30);
+      
+      move(1, 1.52, 30);
+      turn(1, 2.1, 30);
+      FCR.setPower(1);
+      FCL.setPower(-1);
+      move(1, 1.7, 30);
+      FCR.setPower(0);
+      FCL.setPower(0);
+      turn(1, 3.1, 30);
+      move(1, 3.8, 30);
+      move(-1, -0.6, 30);
+      FCR.setPower(-1);
+      FCL.setPower(1);
+      FCR.setPower(-1);
+      FCL.setPower(1);
+      FCR.setPower(-1);
+      FCL.setPower(1);
+      sleep(1000);  
+      move(-1, -1.4, 30);
+    }
+  }
+  
+   public void stopMotors()
+   {
+     BR.setPower(0);
+     FR.setPower(0);
+     BL.setPower(0);
+     FL.setPower(0);
+   }
+   public void move (double power, double numRevolutions, double marginOfError)
+  {
+    BR.setMode(DcMotor.RunMode.RESET_ENCODERS);
+    BL.setMode(DcMotor.RunMode.RESET_ENCODERS);
+    FR.setMode(DcMotor.RunMode.RESET_ENCODERS);
+    FL.setMode(DcMotor.RunMode.RESET_ENCODERS);
+    
+    double target = numRevolutions * ticks;
+    BR.setTargetPosition((int) target);
+    BL.setTargetPosition((int)-target);
+    FR.setTargetPosition((int)target);
+    FL.setTargetPosition((int)-target);
+    BR.setMode(DcMotor.RunMode.RUN_TO_POSITION);
+    BL.setMode(DcMotor.RunMode.RUN_TO_POSITION);
+    FR.setMode(DcMotor.RunMode.RUN_TO_POSITION);
+    FL.setMode(DcMotor.RunMode.RUN_TO_POSITION);
+    BR.setPower(power);
+    BL.setPower(-power);
+    FR.setPower(power);
+    FL.setPower(-power);
+
+    target = Math.abs(target);
+    minTarget = target - marginOfError;
+    while(Math.abs(BR.getCurrentPosition())<target && Math.abs(BR.getCurrentPosition())<minTarget)
+    {
+      telemetry.addData("target", target);
+      telemetry.addData("minTarget", minTarget);
+      telemetry.addData("BR Encoder", BR.getCurrentPosition());
+      telemetry.addData("FR Encoder", FR.getCurrentPosition());          
+      telemetry.addData("BL Encoder", BL.getCurrentPosition());
+      telemetry.addData("FL Encoder", FL.getCurrentPosition());
+      telemetry.update();
+    }
+    BR.setPower(0);
+    BL.setPower(0);
+    FR.setPower(0);
+    FL.setPower(0);
+    
+    BR.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
+    BL.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
+    FR.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
+    FL.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
+  }
+  
+  
+   public void turn (double power, double numRevolutions, double marginOfError)
+  {
+    BR.setMode(DcMotor.RunMode.RESET_ENCODERS);
+    BL.setMode(DcMotor.RunMode.RESET_ENCODERS);
+    FR.setMode(DcMotor.RunMode.RESET_ENCODERS);
+    FL.setMode(DcMotor.RunMode.RESET_ENCODERS);
+    
+    double target = numRevolutions * ticks;
+    BR.setTargetPosition((int)target);
+    BL.setTargetPosition((int)target);
+    FR.setTargetPosition((int)target);
+    FL.setTargetPosition((int)target);
+    BR.setMode(DcMotor.RunMode.RUN_TO_POSITION);
+    BL.setMode(DcMotor.RunMode.RUN_TO_POSITION);
+    FR.setMode(DcMotor.RunMode.RUN_TO_POSITION);
+    FL.setMode(DcMotor.RunMode.RUN_TO_POSITION);
+    BR.setPower(power);
+    BL.setPower(power);
+    FR.setPower(power);
+    FL.setPower(power);
+
+    target = Math.abs(target);
+    minTarget = target - marginOfError;
+    while(Math.abs(BR.getCurrentPosition())<target && Math.abs(BR.getCurrentPosition())<minTarget)
+    {
+      telemetry.addData("target", target);
+      telemetry.addData("minTarget", minTarget);
+      telemetry.addData("BR Encoder", BR.getCurrentPosition());
+      telemetry.addData("FR Encoder", FR.getCurrentPosition());          
+      telemetry.addData("BL Encoder", BL.getCurrentPosition());
+      telemetry.addData("FL Encoder", FL.getCurrentPosition());
+      telemetry.update();
+    }
+    
+    BR.setPower(0);
+    BL.setPower(0);
+    FR.setPower(0);
+    FL.setPower(0);
+    
+    BR.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
+    BL.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
+    FR.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
+    FL.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
+  }
+}
