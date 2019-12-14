@@ -45,14 +45,16 @@ public class AutoHungarFoundationRED extends LinearOpMode {
     if (opModeIsActive()) {
  
       move(1,2,30);            //forward
-      turn(1,1,30);            //right
+      turn(1,0.8,30);          //right
       move(1,2,30);            //forward
-      palitaPos(0.5);          //down
-      move(-1,-1.6,30);          //backward
-      turn(1,2.4,30);            //right   
+      palitaPos(0);            //down
+      move(-1,-1.6,30);        //backward
+      turn(1,2.4,30);          //right   
       move(1,1.5,30);          //forward
-      palitaPos(0);            //up
+      palitaPos(0.5);          //up
       move(-1,-0.5,30);        //backward
+      turn(-1,-1,30);          //left
+      move(-1,-1.5,30);        //backward
 
     }
   }
@@ -157,3 +159,5 @@ public class AutoHungarFoundationRED extends LinearOpMode {
      }
   }
 }
+
+
