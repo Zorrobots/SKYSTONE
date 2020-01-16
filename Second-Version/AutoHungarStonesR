@@ -1,0 +1,496 @@
+package org.firstinspires.ftc.teamcode;
+
+import com.qualcomm.robotcore.eventloop.opmode.Autonomous;
+import com.qualcomm.hardware.bosch.BNO055IMU;
+import org.firstinspires.ftc.robotcore.external.JavaUtil;
+import com.qualcomm.robotcore.hardware.DcMotorController;
+import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
+import com.qualcomm.robotcore.hardware.DcMotor;
+import com.qualcomm.robotcore.util.ElapsedTime;
+import com.qualcomm.robotcore.hardware.Servo;
+import com.qualcomm.hardware.modernrobotics.ModernRoboticsI2cRangeSensor;
+import com.qualcomm.robotcore.hardware.DistanceSensor;
+import org.firstinspires.ftc.robotcore.external.navigation.VuforiaLocalizer;
+import org.firstinspires.ftc.robotcore.external.navigation.VuforiaSkyStone;
+import android.app.Activity;
+import android.view.View;
+
+import org.firstinspires.ftc.robotcore.external.navigation.AngleUnit;
+import org.firstinspires.ftc.robotcore.external.navigation.AxesOrder;
+import org.firstinspires.ftc.robotcore.external.navigation.AxesReference;
+import org.firstinspires.ftc.robotcore.external.navigation.Orientation;
+import org.firstinspires.ftc.robotcore.external.navigation.Position;
+import org.firstinspires.ftc.robotcore.external.navigation.Velocity;
+
+@Autonomous(name = "AutoHungarStonesR", group = "PruebaAuto")
+public class AutoHungarStonesR extends LinearOpMode {
+   static ElapsedTime tiempo = new ElapsedTime(ElapsedTime.Resolution.MILLISECONDS);
+  static final int ticks = 1120;
+  static double minTarget;
+  private DcMotor BR = null;
+  private DcMotor BL = null;
+  private DcMotor FCR;
+  private DcMotor FCL;
+  private DcMotor FR = null;
+  private DcMotor FL = null;
+  private VuforiaSkyStone vuforiaSkyStone;
+  private BNO055IMU imu;
+  private Orientation lastAngles = new Orientation();
+  private double globalAngle, power = 0.30, correction;
+  @Override
+  
+  public void runOpMode() {
+
+    BNO055IMU.Parameters parameters = new BNO055IMU.Parameters();
+    
+    parameters.mode = BNO055IMU.SensorMode.IMU;
+    parameters.angleUnit = BNO055IMU.AngleUnit.DEGREES;
+    parameters.accelUnit = BNO055IMU.AccelUnit.METERS_PERSEC_PERSEC;
+    parameters.loggingEnabled = false;
+    
+    imu = hardwareMap.get(BNO055IMU.class, "imu2");
+    
+    BR = hardwareMap.dcMotor.get("BR");
+    BL = hardwareMap.dcMotor.get("BL");
+    FCR = hardwareMap.dcMotor.get("FCR");
+    FCL = hardwareMap.dcMotor.get("FCL");
+    FR = hardwareMap.dcMotor.get("FR");
+    FL = hardwareMap.dcMotor.get("FL");
+
+      BR.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
+      BL.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
+      FR.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
+      FL.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
+      BR.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
+      BL.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
+      FR.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
+      FL.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
+    FCR.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
+    FCL.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
+
+    imu.initialize(parameters);
+    vuforiaSkyStone = new VuforiaSkyStone();
+
+    // Initialize Vuforia
+    telemetry.addData("Status", "Initializing Vuforia. Please wait...");
+    telemetry.update();
+    initVuforia();
+    // Activate here for camera preview.
+    vuforiaSkyStone.activate();
+    telemetry.addData(">>", "Vuforia initialized, press start to continue...");
+    telemetry.update();
+        waitForStart();
+
+    if (opModeIsActive()) {
+      
+      correction = checkDirection();
+      
+      right(0.8, 1.64, 30);
+      rotate(-3, 0.13);
+      /*
+        for(int i = 0; i < 3; i++)
+        {
+          sleep(1000);
+          if(isTargetVisible("Stone Target") == true || i==2) {
+            if(i == 1)
+            {
+              move(-0.5, -2, 31);
+            }
+             right(1, 0.75, 31);
+            move(1, 1.3, 31);
+          right(1, 1.5, 31);
+          FCR.setPower(1);
+          FCL.setPower(-1);
+          move(-0.5, -0.9, 31);
+          FCR.setPower(0);
+          FCL.setPower(0);
+          left(1, 2.3, 31);
+          BR.setPower(-0.5);
+          BL.setPower(0);
+          FR.setPower(-0);
+          FL.setPower(0);
+          
+          stopMotors();
+          right(1,0.7,30);
+          turn(-0.8, -3.4, 31);
+          stopMotors();
+          if(i == 2)
+          {
+          move(-1, -4.5, 31);
+          }
+          else if(i == 1)
+          {
+            move(-1, -3.8, 31);
+          }
+          else
+          {
+            move(-1, -3.1, 31);
+          }
+          FCR.setPower(-0.15);
+          FCL.setPower(0.15);
+          move(1, 1.2, 31);
+          FCR.setPower(0);
+          FCL.setPower(0);
+          i = 3;
+          }
+          else
+          {
+            move(-0.2, -0.7, 31);
+          }
+        }
+        
+    
+    */
+    vuforiaSkyStone.deactivate();
+
+    vuforiaSkyStone.close();
+    }
+}
+  private void initVuforia() {
+    // Rotate phone -90 so back camera faces "forward" direction on robot.
+    // Assumes landscape orientation
+    vuforiaSkyStone.initialize(
+        "", // vuforiaLicenseKey
+        VuforiaLocalizer.CameraDirection.FRONT, // cameraDirection
+        true, // useExtendedTracking
+        true, // enableCameraMonitoring
+        VuforiaLocalizer.Parameters.CameraMonitorFeedback.AXES, // cameraMonitorFeedback
+        0, // dx
+        0, // dy
+        0, // dz
+        0, // xAngle
+        -90, // yAngle
+        0, // zAngle
+        true); // useCompetitionFieldTargetLocations
+  }
+
+  private boolean isTargetVisible(String trackableName) {
+    // Get vuforia results for target.
+    // Is this target visible?
+    boolean isVisible;
+    if (vuforiaSkyStone.track(trackableName).isVisible) {
+      isVisible = true;
+    } 
+    else {
+      isVisible = false;
+    }
+    return isVisible;
+  }
+
+  private void processTarget() {
+    // Display the target name.
+    telemetry.addData("Target Detected", vuforiaSkyStone.track("Stone Target").name + " is visible.");
+    telemetry.addData("X (in)", Double.parseDouble(JavaUtil.formatNumber(displayValue(vuforiaSkyStone.track("Stone Target").x, "CM"), 2)));
+    telemetry.addData("Y (in)", Double.parseDouble(JavaUtil.formatNumber(displayValue(vuforiaSkyStone.track("Stone Target").y, "CM"), 2)));
+    telemetry.addData("Z (in)", Double.parseDouble(JavaUtil.formatNumber(displayValue(vuforiaSkyStone.track("Stone Target").z, "CM"), 2)));
+    telemetry.addData("Rotation about Z (deg)", Double.parseDouble(JavaUtil.formatNumber(vuforiaSkyStone.track("Stone Target").zAngle, 2)));
+  }
+
+  private double displayValue(float originalValue, String units) {
+    // Vuforia returns distances in mm.
+    double convertedValue;
+    if (units.equals("CM")) {
+      convertedValue = originalValue / 10;
+    } else if (units.equals("M")) {
+      convertedValue = originalValue / 1000;
+    } else if (units.equals("IN")) {
+      convertedValue = originalValue / 25.4;
+    } else if (units.equals("FT")) {
+      convertedValue = (originalValue / 25.4) / 12;
+    } else {
+      convertedValue = originalValue;
+    }
+    return convertedValue;
+  }
+   public void stopMotors()
+   {
+     BR.setPower(0);
+     FR.setPower(0);
+     BL.setPower(0);
+     FL.setPower(0);
+   }
+   public void move (double power, double numRevolutions, double marginOfError)
+  {
+    BR.setMode(DcMotor.RunMode.RESET_ENCODERS);
+    BL.setMode(DcMotor.RunMode.RESET_ENCODERS);
+    FR.setMode(DcMotor.RunMode.RESET_ENCODERS);
+    FL.setMode(DcMotor.RunMode.RESET_ENCODERS);
+    
+    double target = numRevolutions * ticks;
+    BR.setTargetPosition((int) target);
+    BL.setTargetPosition((int)-target);
+    FR.setTargetPosition((int)target);
+    FL.setTargetPosition((int)-target);
+    BR.setMode(DcMotor.RunMode.RUN_TO_POSITION);
+    BL.setMode(DcMotor.RunMode.RUN_TO_POSITION);
+    FR.setMode(DcMotor.RunMode.RUN_TO_POSITION);
+    FL.setMode(DcMotor.RunMode.RUN_TO_POSITION);
+    BR.setPower(power);
+    BL.setPower(-power);
+    FR.setPower(power);
+    FL.setPower(-power);
+
+    target = Math.abs(target);
+    minTarget = target - marginOfError;
+    while(Math.abs(FR.getCurrentPosition())<target && Math.abs(BR.getCurrentPosition())<minTarget)
+    {
+      telemetry.addData("target", target);
+      telemetry.addData("minTarget", minTarget);
+      telemetry.addData("BR Encoder", BR.getCurrentPosition());
+      telemetry.addData("FR Encoder", FR.getCurrentPosition());          
+      telemetry.addData("BL Encoder", BL.getCurrentPosition());
+      telemetry.addData("FL Encoder", FL.getCurrentPosition());
+      telemetry.update();
+    }
+    BR.setPower(0);
+    BL.setPower(0);
+    FR.setPower(0);
+    FL.setPower(0);
+    
+    BR.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
+    BL.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
+    FR.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
+    FL.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
+  }
+  public void left (double power, double numRevolutions, double marginOfError)
+  {
+    BR.setMode(DcMotor.RunMode.RESET_ENCODERS);
+    BL.setMode(DcMotor.RunMode.RESET_ENCODERS);
+    FR.setMode(DcMotor.RunMode.RESET_ENCODERS);
+    FL.setMode(DcMotor.RunMode.RESET_ENCODERS);
+    
+    double target = numRevolutions * ticks;
+    BR.setTargetPosition((int)target);
+    BL.setTargetPosition((int)target);
+    FR.setTargetPosition((int)-target);
+    FL.setTargetPosition((int)-target);
+    BR.setMode(DcMotor.RunMode.RUN_TO_POSITION);
+    BL.setMode(DcMotor.RunMode.RUN_TO_POSITION);
+    FR.setMode(DcMotor.RunMode.RUN_TO_POSITION);
+    FL.setMode(DcMotor.RunMode.RUN_TO_POSITION);
+    BR.setPower(power);
+    BL.setPower(power);
+    FR.setPower(-power);
+    FL.setPower(-power);
+    
+    
+    target = Math.abs(target);
+    minTarget = target - marginOfError;
+    while(Math.abs(FR.getCurrentPosition())<target && Math.abs(BR.getCurrentPosition())<minTarget)
+    {
+      telemetry.addData("target", target);
+      telemetry.addData("minTarget", minTarget);
+      telemetry.addData("BR Encoder", BR.getCurrentPosition());
+      telemetry.addData("FR Encoder", FR.getCurrentPosition());          
+      telemetry.addData("BL Encoder", BL.getCurrentPosition());
+      telemetry.addData("FL Encoder", FL.getCurrentPosition());
+      telemetry.update();
+    }
+    
+    BR.setPower(0);
+    BL.setPower(0);
+    FR.setPower(0);
+    FL.setPower(0);
+    
+    BR.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
+    BL.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
+    FR.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
+    FL.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
+  }
+  
+  public void right (double power, double numRevolutions, double marginOfError)
+  {
+    BR.setMode(DcMotor.RunMode.RESET_ENCODERS);
+    BL.setMode(DcMotor.RunMode.RESET_ENCODERS);
+    FR.setMode(DcMotor.RunMode.RESET_ENCODERS);
+    FL.setMode(DcMotor.RunMode.RESET_ENCODERS);
+    
+    double target = numRevolutions * ticks;
+    BR.setTargetPosition((int)-target);
+    BL.setTargetPosition((int)-target);
+    FR.setTargetPosition((int)target);
+    FL.setTargetPosition((int)target);
+    BR.setMode(DcMotor.RunMode.RUN_TO_POSITION);
+    BL.setMode(DcMotor.RunMode.RUN_TO_POSITION);
+    FR.setMode(DcMotor.RunMode.RUN_TO_POSITION);
+    FL.setMode(DcMotor.RunMode.RUN_TO_POSITION);
+    BR.setPower(-power);
+    BL.setPower(-power);
+    FR.setPower(power);
+    FL.setPower(power);
+    
+    
+    target = Math.abs(target);
+    minTarget = target - marginOfError;
+    while(Math.abs(FR.getCurrentPosition())<target && Math.abs(BR.getCurrentPosition())<minTarget)
+    {
+      telemetry.addData("target", target);
+      telemetry.addData("minTarget", minTarget);
+      telemetry.addData("BR Encoder", BR.getCurrentPosition());
+      telemetry.addData("FR Encoder", FR.getCurrentPosition());          
+      telemetry.addData("BL Encoder", BL.getCurrentPosition());
+      telemetry.addData("FL Encoder", FL.getCurrentPosition());
+      telemetry.update();
+    }
+
+    
+    BR.setPower(0);
+    BL.setPower(0);
+    FR.setPower(0);
+    FL.setPower(0);
+    
+    BR.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
+    BL.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
+    FR.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
+    FL.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
+  }
+  
+  
+   public void turn (double power, double numRevolutions, double marginOfError)
+  {
+    BR.setMode(DcMotor.RunMode.RESET_ENCODERS);
+    BL.setMode(DcMotor.RunMode.RESET_ENCODERS);
+    FR.setMode(DcMotor.RunMode.RESET_ENCODERS);
+    FL.setMode(DcMotor.RunMode.RESET_ENCODERS);
+    
+    double target = numRevolutions * ticks;
+    BR.setTargetPosition((int)target);
+    BL.setTargetPosition((int)target);
+    FR.setTargetPosition((int)target);
+    FL.setTargetPosition((int)target);
+    BR.setMode(DcMotor.RunMode.RUN_TO_POSITION);
+    BL.setMode(DcMotor.RunMode.RUN_TO_POSITION);
+    FR.setMode(DcMotor.RunMode.RUN_TO_POSITION);
+    FL.setMode(DcMotor.RunMode.RUN_TO_POSITION);
+    BR.setPower(power);
+    BL.setPower(power);
+    FR.setPower(power);
+    FL.setPower(power);
+
+    target = Math.abs(target);
+    minTarget = target - marginOfError;
+    while(Math.abs(FR.getCurrentPosition())<target && Math.abs(BR.getCurrentPosition())<minTarget)
+    {
+      telemetry.addData("target", target);
+      telemetry.addData("minTarget", minTarget);
+      telemetry.addData("BR Encoder", BR.getCurrentPosition());
+      telemetry.addData("FR Encoder", FR.getCurrentPosition());          
+      telemetry.addData("BL Encoder", BL.getCurrentPosition());
+      telemetry.addData("FL Encoder", FL.getCurrentPosition());
+      telemetry.update();
+    }
+    
+    BR.setPower(0);
+    BL.setPower(0);
+    FR.setPower(0);
+    FL.setPower(0);
+    
+    BR.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
+    BL.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
+    FR.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
+    FL.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
+  }
+
+private void resetAngle()
+    {
+        lastAngles = imu.getAngularOrientation(AxesReference.INTRINSIC, AxesOrder.ZYX, AngleUnit.DEGREES);
+
+        globalAngle = 0;
+    }
+
+    private double getAngle()
+    {
+      
+        Orientation angles = imu.getAngularOrientation(AxesReference.INTRINSIC, AxesOrder.ZYX, AngleUnit.DEGREES);
+
+        double deltaAngle = angles.firstAngle - lastAngles.firstAngle;
+
+        if (deltaAngle < -180)
+            deltaAngle += 360;
+        else if (deltaAngle > 180)
+            deltaAngle -= 360;
+
+        globalAngle += deltaAngle;
+
+        lastAngles = angles;
+
+        return globalAngle;
+    }
+
+
+    private double checkDirection()
+    {
+
+        double correction, angle, gain = .10;
+
+        angle = getAngle();
+
+        if (angle == 0)
+            correction = 0;             // no adjustment.
+        else
+            correction = -angle;        // reverse sign of angle for correction.
+
+        correction = correction * gain;
+
+        return correction;
+    }
+
+
+    private void rotate(int degrees, double power)
+    {
+        double  leftPower, rightPower;
+
+        // restart imu movement tracking.
+        resetAngle();
+
+        // getAngle() returns + when rotating counter clockwise (left) and - when rotating
+        // clockwise (right).
+
+        if (degrees < 0)
+        {   // turn right.
+            leftPower = power;
+            rightPower = power;
+        }
+        else if (degrees > 0)
+        {   // turn left.
+            leftPower = -power;
+            rightPower = -power;
+        }
+        else return;
+
+        // set power to rotate.
+        FL.setPower(leftPower);
+        BL.setPower(leftPower);
+        FR.setPower(rightPower);
+        BR.setPower(rightPower);
+        telemetry.addData("Angle ", getAngle());
+              telemetry.update();
+        // rotate until turn is completed.
+        if (degrees < 0)
+        {
+            // On right turn we have to get off zero first.
+            while (opModeIsActive() && getAngle() == 0) {}
+
+            while (opModeIsActive() && getAngle() > degrees) {}
+            
+        }
+        else{
+            while (opModeIsActive() && getAngle() < degrees) {}
+        }
+        // turn the motors off.
+        FL.setPower(0);
+        BL.setPower(0);
+        FR.setPower(0);
+        BR.setPower(0);
+
+        // wait for rotation to stop.
+        sleep(1000);
+
+        // reset angle tracking on new heading.
+        resetAngle();
+    }
+
+
+}
+
+
