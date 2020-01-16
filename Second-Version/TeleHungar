@@ -1,0 +1,134 @@
+package org.firstinspires.ftc.teamcode;
+
+import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
+import com.qualcomm.robotcore.hardware.DcMotorController;
+import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
+import com.qualcomm.robotcore.hardware.DcMotor;
+import com.qualcomm.robotcore.hardware.Servo;
+@TeleOp(name = "TeleHungar: Prueba1", group = "Prueba")
+public class TeleHungar extends LinearOpMode
+{
+
+    private DcMotor BR;
+    private DcMotor BL;
+    private DcMotor FCR;
+    private DcMotor FCL;
+    private DcMotor FR;
+    private DcMotor FL;
+    private Servo Buho;
+    private Servo Garra;
+    private Servo Palita;
+    private DcMotor BACK;
+
+    /**
+     * This function is executed when this Op Mode is selected from the Driver Station.
+     */
+    @Override
+    public void runOpMode()
+    {
+        // Put initialization blocks here.
+
+        BR = hardwareMap.dcMotor.get("BR");
+        BL = hardwareMap.dcMotor.get("BL");
+        FCR = hardwareMap.dcMotor.get("FCR");
+        FCL = hardwareMap.dcMotor.get("FCL");
+        FR = hardwareMap.dcMotor.get("FR");
+        FL = hardwareMap.dcMotor.get("FL");
+        
+        BR.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODERS);
+        BL.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODERS);
+        FR.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODERS);
+        FL.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODERS);
+        
+        Buho = hardwareMap.servo.get("Buho");
+        Garra = hardwareMap.servo.get("Garra");
+        Palita = hardwareMap.servo.get("Palita");
+        BACK = hardwareMap.dcMotor.get("BACK");
+        
+        waitForStart();
+        
+        if (opModeIsActive())
+        {
+            // Put run blocks here.
+            while (opModeIsActive())
+            {
+                BACK.setPower(-gamepad2.right_stick_y);
+                // Put loop blocks here.
+                if(gamepad1.right_trigger>0)
+                {
+                    BR.setPower(-gamepad1.right_trigger);
+                    BL.setPower(-gamepad1.right_trigger);
+                    FR.setPower(gamepad1.right_trigger);
+                    FL.setPower(gamepad1.right_trigger);
+                }
+                else if(gamepad1.left_trigger>0)
+                {
+                    BR.setPower(gamepad1.left_trigger);
+                    BL.setPower(gamepad1.left_trigger);
+                    FR.setPower(-gamepad1.left_trigger);
+                    FL.setPower(-gamepad1.left_trigger);
+                }  
+                else
+                {
+                    BR.setPower(gamepad1.right_stick_y);
+                    BL.setPower(-gamepad1.left_stick_y);
+                    FR.setPower(gamepad1.right_stick_y);
+                    FL.setPower(-gamepad1.left_stick_y);
+                }
+                if(gamepad1.right_bumper)
+                {
+                    FCR.setPower(1);
+                    FCL.setPower(-1);
+                }
+                else 
+                {
+                    FCR.setPower(0);
+                    FCL.setPower(0);
+                }
+                if (gamepad1.left_bumper)
+                {
+                    FCR.setPower(-1);
+                    FCL.setPower(1);
+                }
+                else 
+                {
+                    FCL.setPower(0);
+                    FCL.setPower(0);
+                }
+
+                if (gamepad2.dpad_down)
+                {
+                    Garra.setPosition(0.5);
+                }
+                if (gamepad2.dpad_up)
+                {
+                    Garra.setPosition(0.1);
+                }
+                if (gamepad2.right_bumper)
+                {
+                    Buho.setPosition(1);
+                }
+                if (gamepad2.left_bumper)
+                {
+                    Buho.setPosition(0);
+                }
+                if (gamepad2.a)
+                {
+                    Palita.setPosition(0.2);
+                }
+                if (gamepad2.b)
+                {
+                    Palita.setPosition(1);
+                }
+                if (gamepad1.a)
+                {
+                    Palita.setPosition(0.5);
+                }
+                if (gamepad1.b)
+                {
+                    Palita.setPosition(1);
+                }
+            }
+        }
+    }
+}
